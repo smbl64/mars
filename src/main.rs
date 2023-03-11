@@ -7,6 +7,8 @@ use serde_json::Value;
 
 use crate::handler::Handler;
 
+pub const MALFORMED_REQUEST: u64 = 12;
+
 fn main() {
     let handler = Handler;
     let mut id_gen = IdGenerator::default();
@@ -14,7 +16,10 @@ fn main() {
     eprintln!("Online");
 
     loop {
-        let msg = handler.read_request().unwrap();
+        let Ok(msg) = handler.read_request() else {
+            eprintln!("Error: Cannot parse the request");
+            continue;
+        };
 
         let Some(echo_msg) = msg.body.other.get("echo").map(Value::as_str) else {
             let Some(msg_id) = msg.body.msg_id else {
@@ -22,7 +27,9 @@ fn main() {
                 continue;
             };
 
-            handler.write_error(msg_id, 66, "Error: Echo workload has no `echo` field").expect("cannot send error");
+            handler
+                .write_error(msg_id, MALFORMED_REQUEST, "Error: Echo workload has no `echo` field")
+                .expect("cannot send error");
             continue;
         };
 
@@ -36,6 +43,8 @@ fn main() {
                 other: HashMap::new(),
             },
         };
+
+        let b = Body::new("error", 12, 22).with_extra_field("woot", 1234);
 
         response
             .body
