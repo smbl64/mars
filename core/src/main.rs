@@ -1,4 +1,0 @@
-fn main() {
-    echo::run();
-}
-
