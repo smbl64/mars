@@ -9,16 +9,21 @@ use crate::transport::Transport;
 pub const MALFORMED_REQUEST: u64 = 12;
 
 fn main() {
+    std::env::set_var(env_logger::DEFAULT_FILTER_ENV, "debug");
+
+    // By default env_logger logs to stderr, which is what we want
+    env_logger::init();
+
     let transport = Transport;
     let mut id_gen = IdGenerator::default();
 
-    eprintln!("Online");
+    log::info!("Online");
 
     loop {
         let msg = match transport.read_request() {
             Ok(m) => m,
             Err(e) => {
-                eprintln!("Error: Cannot parse the request: {}", e);
+                log::warn!("Error: Cannot parse the request: {}", e);
                 continue;
             }
         };
@@ -40,7 +45,7 @@ fn handle_init(handler: &Transport, id_gen: &mut IdGenerator, req: Message) {
 fn handle_echo(handler: &Transport, id_gen: &mut IdGenerator, req: Message) {
     let Some(echo_msg) = req.body.other.get("echo").map(Value::as_str) else {
         let Some(msg_id) = req.body.msg_id else {
-            eprint!("Error: Request has no `msg_id` field");
+            log::warn!("Error: Request has no `msg_id` field");
         return;
         };
 

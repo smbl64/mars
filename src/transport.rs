@@ -12,7 +12,7 @@ impl Transport {
     /// Reads a new request from stdin and deserialize it to a `Message`.
     pub fn read_request(&self) -> HandlerResult<Message> {
         let msg_str = self.read_stdin()?;
-        // eprintln!("Received {}", msg_str);
+        log::debug!("Received {}", msg_str);
 
         let msg: Message = serde_json::from_str(&msg_str)?;
         Ok(msg)
@@ -24,7 +24,7 @@ impl Transport {
         T: Serialize,
     {
         let output = serde_json::to_string(&response)?;
-        // eprintln!("Sending {}", output);
+        log::debug!("Sending {}", output);
 
         println!("{}", output);
         Ok(())
