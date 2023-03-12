@@ -1,25 +1,28 @@
 use std::io;
 
 use color_eyre::Report;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::models::*;
 pub struct Transport;
 
-type HandlerResult<T> = Result<T, Report>;
+type TransportResult<T> = Result<T, Report>;
 
 impl Transport {
     /// Reads a new request from stdin and deserialize it to a `Message`.
-    pub fn read_request(&self) -> HandlerResult<Message> {
+    pub fn read_request<W>(&self) -> TransportResult<Message<W>>
+    where
+        W: DeserializeOwned,
+    {
         let msg_str = self.read_stdin()?;
         log::debug!("Received {}", msg_str);
 
-        let msg: Message = serde_json::from_str(&msg_str)?;
+        let msg: Message<W> = serde_json::from_str(&msg_str)?;
         Ok(msg)
     }
 
     /// Serializes the response and writes it to stdout.
-    pub fn write_response<T>(&self, response: &T) -> HandlerResult<()>
+    pub fn write_response<T>(&self, response: &T) -> TransportResult<()>
     where
         T: Serialize,
     {
@@ -28,17 +31,6 @@ impl Transport {
 
         println!("{}", output);
         Ok(())
-    }
-
-    /// A helper method to create an error response and send it.
-    pub fn write_error(
-        &self,
-        in_reply_to: u64,
-        code: u64,
-        text: impl AsRef<str>,
-    ) -> HandlerResult<()> {
-        let e = Error::new(in_reply_to, code, text);
-        self.write_response(&e)
     }
 
     fn read_stdin(&self) -> Result<String, Report> {

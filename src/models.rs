@@ -1,53 +1,67 @@
-use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::{
-    collections::HashMap,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::sync::atomic::{AtomicU64, Ordering};
 
-#[derive(Debug, Clone, Builder, Deserialize, Serialize)]
-pub struct Message {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Message<W> {
     pub src: String,
     pub dest: String,
-    pub body: Body,
+    pub body: Body<W>,
 }
 
-impl Message {
-    pub fn create_response(&self, body: Body) -> Self {
-        Message {
-            src: self.dest.clone(),
-            dest: self.src.clone(),
-            body,
-        }
-    }
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum Body<W> {
+    Error(Error),
+    Init(Init),
+    Workload(W),
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Body {
-    #[serde(rename = "type")]
-    pub msg_type: String,
-    pub msg_id: Option<u64>,
-    pub in_reply_to: Option<u64>,
-
-    #[serde(flatten)]
-    pub other: HashMap<String, Value>,
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "error")]
+#[serde(tag = "type")]
+pub struct Error {
+    pub in_reply_to: u64,
+    pub code: u64,
+    pub text: String,
 }
 
-impl Body {
-    pub fn new(msg_type: impl AsRef<str>, msg_id: u64, in_reply_to: u64) -> Self {
-        Self {
-            msg_type: msg_type.as_ref().to_owned(),
-            msg_id: Some(msg_id),
-            in_reply_to: Some(in_reply_to),
-            other: HashMap::new(),
-        }
-    }
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum Init {
+    #[serde(rename = "init")]
+    Init(InitRequest),
+    #[serde(rename = "init_ok")]
+    InitOk { in_reply_to: u64 },
+}
 
-    pub fn with_extra_field(mut self, name: &str, value: impl Into<Value>) -> Self {
-        self.other.insert(name.to_owned(), value.into());
-        self
-    }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InitRequest {
+    pub msg_id: u64,
+    pub node_id: String,
+    pub node_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum Echo {
+    #[serde(rename = "echo")]
+    Echo(EchoRequest),
+
+    #[serde(rename = "echo_ok")]
+    EchoOk(EchoResponse),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct EchoRequest {
+    pub msg_id: u64,
+    pub echo: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct EchoResponse {
+    pub msg_id: u64,
+    pub in_reply_to: u64,
+    pub echo: String,
 }
 
 #[derive(Default)]
@@ -58,25 +72,5 @@ pub struct IdGenerator {
 impl IdGenerator {
     pub fn next(&mut self) -> u64 {
         self.value.fetch_add(1, Ordering::Relaxed)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Error {
-    #[serde(rename = "type")]
-    pub msg_type: String,
-    pub in_reply_to: u64,
-    pub code: u64,
-    pub text: String,
-}
-
-impl Error {
-    pub fn new(in_reply_to: u64, code: u64, text: impl AsRef<str>) -> Self {
-        Self {
-            msg_type: "error".to_owned(),
-            in_reply_to,
-            code,
-            text: text.as_ref().to_owned(),
-        }
     }
 }
