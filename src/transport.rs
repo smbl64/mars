@@ -4,11 +4,12 @@ use color_eyre::Report;
 use serde::Serialize;
 
 use crate::models::*;
-pub struct Handler;
+pub struct Transport;
 
 type HandlerResult<T> = Result<T, Report>;
 
-impl Handler {
+impl Transport {
+    /// Reads a new request from stdin and deserialize it to a `Message`.
     pub fn read_request(&self) -> HandlerResult<Message> {
         let msg_str = self.read_stdin()?;
         // eprintln!("Received {}", msg_str);
@@ -17,17 +18,19 @@ impl Handler {
         Ok(msg)
     }
 
-    pub fn write_response<T>(&self, msg: &T) -> HandlerResult<()>
+    /// Serializes the response and writes it to stdout.
+    pub fn write_response<T>(&self, response: &T) -> HandlerResult<()>
     where
         T: Serialize,
     {
-        let output = serde_json::to_string(&msg)?;
+        let output = serde_json::to_string(&response)?;
         // eprintln!("Sending {}", output);
 
         println!("{}", output);
         Ok(())
     }
 
+    /// A helper method to create an error response and send it.
     pub fn write_error(
         &self,
         in_reply_to: u64,
