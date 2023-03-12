@@ -15,9 +15,8 @@ pub const MALFORMED_REQUEST: u64 = 12;
 type EchoMessage = Message<Echo>;
 
 pub fn run() {
-    std::env::set_var(env_logger::DEFAULT_FILTER_ENV, "debug");
-
     // By default env_logger logs to stderr, which is what we want
+    std::env::set_var(env_logger::DEFAULT_FILTER_ENV, "debug");
     env_logger::init();
 
     let transport = Transport;
