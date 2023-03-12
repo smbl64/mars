@@ -72,21 +72,4 @@ fn handle_echo(
         body: Body::<Echo>::Workload(body),
     };
     handler.write_response(&response).unwrap();
-    // let Some(echo_msg) = req.body.other.get("echo").map(Value::as_str) else {
-    //     let Some(msg_id) = req.body.msg_id else {
-    //         log::warn!("Error: Request has no `msg_id` field");
-    //     return;
-    //     };
-    //
-    //     handler
-    //         .write_error(msg_id, MALFORMED_REQUEST, "Error: Echo workload has no `echo` field")
-    //         .expect("cannot send error");
-    //     return;
-    // };
-    //
-    // let body = Body::new("echo_ok", id_gen.next(), req.body.msg_id.unwrap())
-    //     .with_extra_field("echo", echo_msg);
-    //
-    // let response = req.create_response(body);
-    // handler.write_response(&response).unwrap();
 }
