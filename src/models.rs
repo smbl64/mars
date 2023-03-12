@@ -14,10 +14,12 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn build_response(&self) -> MessageBuilder {
-        let mut builder = MessageBuilder::default();
-        builder.src(self.dest.to_owned()).dest(self.src.to_owned());
-        builder
+    pub fn create_response(&self, body: Body) -> Self {
+        Message {
+            src: self.dest.clone(),
+            dest: self.src.clone(),
+            body,
+        }
     }
 }
 

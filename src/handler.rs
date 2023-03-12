@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io};
+use std::io;
 
 use color_eyre::Report;
 use serde::Serialize;
@@ -13,7 +13,7 @@ impl Handler {
         let msg_str = self.read_stdin()?;
         // eprintln!("Received {}", msg_str);
 
-        let msg: Message = serde_json::from_str::<Message>(&msg_str)?;
+        let msg: Message = serde_json::from_str(&msg_str)?;
         Ok(msg)
     }
 
