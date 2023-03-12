@@ -26,7 +26,7 @@ pub fn run() {
     log::info!("Online");
 
     loop {
-        let msg = match transport.read_request() {
+        let request = match transport.read_request() {
             Ok(m) => m,
             Err(e) => {
                 log::warn!("Error: Cannot parse the request: {}", e);
@@ -34,23 +34,23 @@ pub fn run() {
             }
         };
 
-        match msg.body {
+        match request.body {
             Body::Workload(Echo::Echo(ref payload)) => {
-                handle_echo(&transport, &mut id_gen, &msg, payload)
+                handle_echo(&transport, &mut id_gen, &request, payload)
             }
-            Body::Init(Init::Init(ref payload)) => handle_init(&transport, &msg, payload),
+            Body::Init(Init::Init(ref payload)) => handle_init(&transport, &request, payload),
             _ => {}
         }
     }
 }
 
-fn handle_init(handler: &Transport, msg: &EchoMessage, payload: &InitRequest) {
+fn handle_init(handler: &Transport, request: &EchoMessage, payload: &InitRequest) {
     let body = Init::InitOk {
         in_reply_to: payload.msg_id,
     };
     let response = Message {
-        src: msg.dest.clone(),
-        dest: msg.src.clone(),
+        src: request.dest.clone(),
+        dest: request.src.clone(),
         body: Body::<Echo>::Init(body),
     };
 
@@ -60,7 +60,7 @@ fn handle_init(handler: &Transport, msg: &EchoMessage, payload: &InitRequest) {
 fn handle_echo(
     handler: &Transport,
     id_gen: &mut IdGenerator,
-    msg: &EchoMessage,
+    request: &EchoMessage,
     payload: &EchoRequest,
 ) {
     let body = Echo::EchoOk(EchoResponse {
@@ -69,8 +69,8 @@ fn handle_echo(
         echo: payload.echo.clone(),
     });
     let response = Message {
-        src: msg.dest.clone(),
-        dest: msg.src.clone(),
+        src: request.dest.clone(),
+        dest: request.src.clone(),
         body: Body::<Echo>::Workload(body),
     };
     handler.write_response(&response).unwrap();
