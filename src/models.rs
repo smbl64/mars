@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Message<W> {
@@ -62,15 +61,4 @@ pub struct EchoResponse {
     pub msg_id: u64,
     pub in_reply_to: u64,
     pub echo: String,
-}
-
-#[derive(Default)]
-pub struct IdGenerator {
-    value: AtomicU64,
-}
-
-impl IdGenerator {
-    pub fn next(&mut self) -> u64 {
-        self.value.fetch_add(1, Ordering::Relaxed)
-    }
 }

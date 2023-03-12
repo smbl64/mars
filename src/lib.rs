@@ -1,7 +1,9 @@
+mod id_gen;
 mod models;
 mod transport;
 
 pub mod prelude {
+    pub use crate::id_gen::IdGenerator;
     pub use crate::models::*;
     pub use crate::transport::*;
 }
