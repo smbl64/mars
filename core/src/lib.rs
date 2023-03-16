@@ -13,14 +13,27 @@ use crate::prelude::*;
 
 type EchoMessage = Message<Echo>;
 
+pub struct Context {
+    pub transport: Transport,
+    pub id_gen: IdGenerator,
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            transport: Transport,
+            id_gen: IdGenerator::default(),
+        }
+    }
+}
+
 pub fn run() {
-    let transport = Transport;
-    let mut id_gen = IdGenerator::default();
+    let mut ctx = Context::default();
 
     log::info!("Online");
 
     loop {
-        let request = match transport.read_request() {
+        let request = match ctx.transport.read_request() {
             Ok(m) => m,
             Err(e) => {
                 log::warn!("Error: Cannot parse the request: {}", e);
@@ -29,16 +42,14 @@ pub fn run() {
         };
 
         match request.body {
-            Body::Workload(Echo::Echo(ref payload)) => {
-                handle_echo(&transport, &mut id_gen, &request, payload)
-            }
-            Body::Init(Init::Init(ref payload)) => handle_init(&transport, &request, payload),
+            Body::Workload(Echo::Echo(ref payload)) => handle_echo(&mut ctx, &request, payload),
+            Body::Init(Init::Init(ref payload)) => handle_init(&mut ctx, &request, payload),
             _ => {}
         }
     }
 }
 
-fn handle_init(transport: &Transport, request: &EchoMessage, payload: &InitRequest) {
+fn handle_init(ctx: &mut Context, request: &EchoMessage, payload: &InitRequest) {
     let body = Init::InitOk {
         in_reply_to: payload.msg_id,
     };
@@ -48,18 +59,13 @@ fn handle_init(transport: &Transport, request: &EchoMessage, payload: &InitReque
         body: Body::<Echo>::Init(body),
     };
 
-    transport.write_response(&response).unwrap();
+    ctx.transport.write_response(&response).unwrap();
 }
 
-fn handle_echo(
-    transport: &Transport,
-    id_gen: &mut IdGenerator,
-    request: &EchoMessage,
-    payload: &EchoRequest,
-) {
+fn handle_echo(ctx: &mut Context, request: &EchoMessage, payload: &EchoRequest) {
     let body = Echo::EchoOk(EchoResponse {
         in_reply_to: payload.msg_id,
-        msg_id: id_gen.next(),
+        msg_id: ctx.id_gen.next(),
         echo: payload.echo.clone(),
     });
     let response = Message {
@@ -67,5 +73,5 @@ fn handle_echo(
         dest: request.src.clone(),
         body: Body::<Echo>::Workload(body),
     };
-    transport.write_response(&response).unwrap();
+    ctx.transport.write_response(&response).unwrap();
 }
