@@ -1,3 +1,4 @@
+mod handler;
 mod id_gen;
 mod models;
 mod transport;
@@ -37,7 +38,7 @@ pub fn run() {
     }
 }
 
-fn handle_init(handler: &Transport, request: &EchoMessage, payload: &InitRequest) {
+fn handle_init(transport: &Transport, request: &EchoMessage, payload: &InitRequest) {
     let body = Init::InitOk {
         in_reply_to: payload.msg_id,
     };
@@ -47,11 +48,11 @@ fn handle_init(handler: &Transport, request: &EchoMessage, payload: &InitRequest
         body: Body::<Echo>::Init(body),
     };
 
-    handler.write_response(&response).unwrap();
+    transport.write_response(&response).unwrap();
 }
 
 fn handle_echo(
-    handler: &Transport,
+    transport: &Transport,
     id_gen: &mut IdGenerator,
     request: &EchoMessage,
     payload: &EchoRequest,
@@ -66,5 +67,5 @@ fn handle_echo(
         dest: request.src.clone(),
         body: Body::<Echo>::Workload(body),
     };
-    handler.write_response(&response).unwrap();
+    transport.write_response(&response).unwrap();
 }

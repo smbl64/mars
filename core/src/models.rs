@@ -29,6 +29,7 @@ pub struct Error {
 pub enum Init {
     #[serde(rename = "init")]
     Init(InitRequest),
+
     #[serde(rename = "init_ok")]
     InitOk { in_reply_to: u64 },
 }
