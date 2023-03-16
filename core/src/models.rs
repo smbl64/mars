@@ -11,7 +11,9 @@ pub struct Message<W> {
 #[serde(untagged)]
 pub enum Body<W> {
     Error(Error),
-    Init(Init),
+    Init(InitRequest),
+    InitOk(InitResponse),
+
     Workload(W),
 }
 
@@ -25,16 +27,8 @@ pub struct Error {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "init")]
 #[serde(tag = "type")]
-pub enum Init {
-    #[serde(rename = "init")]
-    Init(InitRequest),
-
-    #[serde(rename = "init_ok")]
-    InitOk(InitResponse),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
 pub struct InitRequest {
     pub msg_id: u64,
     pub node_id: String,
@@ -42,6 +36,8 @@ pub struct InitRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename = "init_ok")]
+#[serde(tag = "type")]
 pub struct InitResponse {
     pub in_reply_to: u64,
 }

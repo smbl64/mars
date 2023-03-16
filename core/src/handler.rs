@@ -36,7 +36,7 @@ impl Server {
             };
 
             match request.body {
-                Body::Init(Init::Init(ref payload)) => self.handle_init(&request, payload),
+                Body::Init(ref payload) => self.handle_init(&request, payload),
                 Body::Workload(Echo::Echo(ref payload)) => self.handle_echo(&request, payload),
                 _ => {}
             }
@@ -44,13 +44,13 @@ impl Server {
     }
 
     fn handle_init(&mut self, request: &EchoMessage, payload: &InitRequest) {
-        let body = Init::InitOk(InitResponse {
+        let body: Body<_> = Body::<Echo>::InitOk(InitResponse {
             in_reply_to: payload.msg_id,
         });
         let response = Message {
             src: request.dest.clone(),
             dest: request.src.clone(),
-            body: Body::<Echo>::Init(body),
+            body,
         };
 
         self.ctx.transport.write_response(&response).unwrap();
