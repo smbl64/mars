@@ -35,39 +35,39 @@ impl Server {
                 }
             };
 
-            match request.body {
-                Body::Init(ref payload) => self.handle_init(&request, payload),
-                Body::Workload(Echo::Echo(ref payload)) => self.handle_echo(&request, payload),
-                _ => {}
-            }
+            let body = match request.body {
+                Body::Init(ref payload) => self.handle_init(payload),
+                Body::Workload(Echo::Echo(ref payload)) => self.handle_echo(payload),
+                _ => continue,
+            };
+            let response = Message {
+                src: request.dest.clone(),
+                dest: request.src.clone(),
+                body,
+            };
+
+            self.ctx.transport.write_response(&response).unwrap();
         }
     }
 
-    fn handle_init(&mut self, request: &EchoMessage, payload: &InitRequest) {
+    pub fn get_next_id(&mut self) -> u64 {
+        self.ctx.id_gen.next()
+    }
+
+    fn handle_init(&mut self, payload: &InitRequest) -> Body<Echo> {
         let body: Body<_> = Body::<Echo>::InitOk(InitResponse {
             in_reply_to: payload.msg_id,
         });
-        let response = Message {
-            src: request.dest.clone(),
-            dest: request.src.clone(),
-            body,
-        };
-
-        self.ctx.transport.write_response(&response).unwrap();
+        body
     }
 
-    fn handle_echo(&mut self, request: &EchoMessage, payload: &EchoRequest) {
+    fn handle_echo(&mut self, payload: &EchoRequest) -> Body<Echo> {
         let body = Echo::EchoOk(EchoResponse {
             in_reply_to: payload.msg_id,
-            msg_id: self.ctx.id_gen.next(),
+            msg_id: self.get_next_id(),
             echo: payload.echo.clone(),
         });
-        let response = Message {
-            src: request.dest.clone(),
-            dest: request.src.clone(),
-            body: Body::<Echo>::Workload(body),
-        };
-        self.ctx.transport.write_response(&response).unwrap();
+        Body::<Echo>::Workload(body)
     }
 }
 
