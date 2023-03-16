@@ -31,7 +31,7 @@ pub enum Init {
     Init(InitRequest),
 
     #[serde(rename = "init_ok")]
-    InitOk { in_reply_to: u64 },
+    InitOk(InitResponse),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -39,6 +39,11 @@ pub struct InitRequest {
     pub msg_id: u64,
     pub node_id: String,
     pub node_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InitResponse {
+    pub in_reply_to: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
