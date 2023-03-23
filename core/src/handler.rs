@@ -33,18 +33,24 @@ impl Server {
                 }
             };
 
-            let payload = match request.body.payload {
-                Payload::Init(ref payload) => self.handle_init(payload),
-                Payload::Workload(Echo::Echo(ref payload)) => self.handle_echo(payload),
+            let body = match request.body.msg_type.as_str() {
+                "init" => self.handle_init(&request),
+                "echo" => self.handle_echo(&request),
                 _ => continue,
             };
+
+            let body = match body {
+                Ok(b) => b,
+                Err(s) => {
+                    log::error!("Cannot process request: {}", s);
+                    continue;
+                }
+            };
+
             let response = Message {
                 src: request.dest.clone(),
                 dest: request.src.clone(),
-                body: Body {
-                    msg_type: "".to_owned(), // Not needed -- will be handled by deserializer
-                    payload,
-                },
+                body,
             };
 
             self.ctx.transport.write_response(&response).unwrap();
@@ -55,20 +61,24 @@ impl Server {
         self.ctx.id_gen.next()
     }
 
-    fn handle_init(&mut self, payload: &InitRequest) -> Payload<Echo> {
-        let body: Payload<_> = Payload::<Echo>::InitOk(InitResponse {
-            in_reply_to: payload.msg_id,
-        });
-        body
+    fn handle_init(&mut self, request: &Message) -> Result<Body, String> {
+        let request: InitRequest = request.body.payload_as().map_err(|e| e.to_string())?;
+        let payload = InitResponse {
+            in_reply_to: request.msg_id,
+        };
+
+        Ok(Body::new("init_ok", payload))
     }
 
-    fn handle_echo(&mut self, payload: &EchoRequest) -> Payload<Echo> {
-        let body = Echo::EchoOk(EchoResponse {
-            in_reply_to: payload.msg_id,
+    fn handle_echo(&mut self, request: &Message) -> Result<Body, String> {
+        let request: EchoRequest = request.body.payload_as().map_err(|e| e.to_string())?;
+        let payload = EchoResponse {
+            in_reply_to: request.msg_id,
             msg_id: self.get_next_id(),
-            echo: payload.echo.clone(),
-        });
-        Payload::<Echo>::Workload(body)
+            echo: request.echo.clone(),
+        };
+
+        Ok(Body::new("echo_ok", payload))
     }
 }
 
