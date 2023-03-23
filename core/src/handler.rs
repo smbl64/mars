@@ -13,8 +13,6 @@ pub struct Server {
     ctx: Context,
 }
 
-pub type EchoMessage = Message<Echo>;
-
 impl Default for Server {
     fn default() -> Self {
         Self {
@@ -35,15 +33,18 @@ impl Server {
                 }
             };
 
-            let body = match request.body {
-                Body::Init(ref payload) => self.handle_init(payload),
-                Body::Workload(Echo::Echo(ref payload)) => self.handle_echo(payload),
+            let payload = match request.body.payload {
+                Payload::Init(ref payload) => self.handle_init(payload),
+                Payload::Workload(Echo::Echo(ref payload)) => self.handle_echo(payload),
                 _ => continue,
             };
             let response = Message {
                 src: request.dest.clone(),
                 dest: request.src.clone(),
-                body,
+                body: Body {
+                    msg_type: "".to_owned(), // Not needed -- will be handled by deserializer
+                    payload,
+                },
             };
 
             self.ctx.transport.write_response(&response).unwrap();
@@ -54,20 +55,20 @@ impl Server {
         self.ctx.id_gen.next()
     }
 
-    fn handle_init(&mut self, payload: &InitRequest) -> Body<Echo> {
-        let body: Body<_> = Body::<Echo>::InitOk(InitResponse {
+    fn handle_init(&mut self, payload: &InitRequest) -> Payload<Echo> {
+        let body: Payload<_> = Payload::<Echo>::InitOk(InitResponse {
             in_reply_to: payload.msg_id,
         });
         body
     }
 
-    fn handle_echo(&mut self, payload: &EchoRequest) -> Body<Echo> {
+    fn handle_echo(&mut self, payload: &EchoRequest) -> Payload<Echo> {
         let body = Echo::EchoOk(EchoResponse {
             in_reply_to: payload.msg_id,
             msg_id: self.get_next_id(),
             echo: payload.echo.clone(),
         });
-        Body::<Echo>::Workload(body)
+        Payload::<Echo>::Workload(body)
     }
 }
 
